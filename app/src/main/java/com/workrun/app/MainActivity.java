@@ -132,7 +132,12 @@ public final class MainActivity extends Activity {
     private void showError(){mainFailed=true;progress.setVisibility(View.GONE);error.setVisibility(View.VISIBLE);}
     private void closePopup(WebView web){if(popups.remove(web)){content.removeView(web);web.stopLoading();web.destroy();}}
     private void closeAllPopups(){while(!popups.isEmpty())closePopup(popups.get(popups.size()-1));}
-    @Override public void onBackPressed(){navigateBack();}
+    // Older Android fallback; API 33+ uses OnBackInvokedDispatcher.
+@android.annotation.SuppressLint("GestureBackNavigation")
+@Override
+public void onBackPressed() {
+    navigateBack();
+}
     private void navigateBack(){if(!popups.isEmpty()){WebView current=popups.get(popups.size()-1);if(current.canGoBack())current.goBack();else closePopup(current);}else if(main.canGoBack())main.goBack();else finish();}
     @Override public void onPause(){super.onPause();CookieManager.getInstance().flush();}
     @Override public void onDestroy(){closeAllPopups();if(main!=null){((ViewGroup)main.getParent()).removeView(main);main.destroy();}super.onDestroy();}
