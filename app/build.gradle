@@ -1,0 +1,48 @@
+plugins { id 'com.android.application' }
+
+def signingNames = ['WORKRUN_KEYSTORE', 'WORKRUN_STORE_PASSWORD', 'WORKRUN_KEY_ALIAS', 'WORKRUN_KEY_PASSWORD']
+def signingReady = signingNames.every { System.getenv(it) }
+android {
+    namespace 'com.workrun.app'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.workrun.app'
+        minSdk 24
+        targetSdk 36
+        versionCode 4
+        versionName '2.2'
+    }
+    signingConfigs {
+        if (signingReady) {
+            release {
+                storeFile file(System.getenv('WORKRUN_KEYSTORE'))
+                storePassword System.getenv('WORKRUN_STORE_PASSWORD')
+                keyAlias System.getenv('WORKRUN_KEY_ALIAS')
+                keyPassword System.getenv('WORKRUN_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (signingReady) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lint { abortOnError true }
+}
+tasks.register('requireReleaseSigning') {
+    doLast {
+        if (!signingReady) throw new GradleException('Supply all four WORKRUN signing environment variables. No signing secrets belong in source.')
+        if (!file(System.getenv('WORKRUN_KEYSTORE')).isFile()) throw new GradleException('Signing keystore not found.')
+    }
+}
+tasks.register('signedRelease') {
+    dependsOn 'requireReleaseSigning', 'bundleRelease', 'assembleRelease', 'lintRelease'
+}
+tasks.configureEach {
+    if (name in ['bundleRelease', 'assembleRelease', 'lintRelease']) mustRunAfter 'requireReleaseSigning'
+}
